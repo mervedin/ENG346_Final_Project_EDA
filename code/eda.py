@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pickle
 from itertools import combinations
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 st.set_page_config(page_title="Predictive Maintenance App", layout="wide")
 st.title("Predictive Maintenance App")
@@ -120,9 +121,28 @@ elif page == "Model Prediction":
             data["Type"] = data["Type"].replace({"L": 0, "M": 1, "H": 2})
             st.write("### Input Data", data.head())
 
-            predictions = model.predict(data)
+            X = data.copy()
+            if "Target" in data.columns:
+                st.write("### Target Variable Detected")
+                st.write("The target variable will be used for evaluation metrics.")
+                y = data["Target"]
+                X = X.drop(columns=["Target"])
+            else:
+                st.write("### No Target Variable Detected")
+                st.write("Predictions will be made without evaluation metrics.")
+
+            predictions = model.predict(X)
             st.write("### Predictions")
             st.dataframe(pd.DataFrame(predictions, columns=["Prediction"]))
+
+            
+            if "Target" in data.columns:
+                cm = confusion_matrix(data["Target"], predictions, labels=model.classes_)
+                fig, ax = plt.subplots()
+                disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=model.classes_)
+                disp.plot(ax=ax)
+                st.pyplot(fig)
+                plt.close(fig)
         except Exception as e:
             st.error(f"Error loading model or making predictions: {e}")
     else:
